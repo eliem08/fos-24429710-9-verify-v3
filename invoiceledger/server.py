@@ -54,7 +54,7 @@ class CommitRequest(BaseModel):
 # --- HTML Dashboard View ---
 @app.get("/", response_class=HTMLResponse)
 def index_view(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse(request, "index.html")
 
 
 # --- API Stats & Rollups ---
