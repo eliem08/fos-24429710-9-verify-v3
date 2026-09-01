@@ -1,0 +1,9 @@
+The Home Depot Supply Co.
+Invoice Number: HD-984332
+Date of Issue: 2026-08-14
+PO #: PO-101-Hardware
+--------------------------------------------------
+Fasteners & 3in Deck Screws 25lb ... $185.00
+Construction Adhesive Heavy Duty ... $139.50
+Subtotal: $324.50
+Total Due: $324.50

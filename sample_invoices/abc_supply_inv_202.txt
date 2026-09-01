@@ -1,0 +1,6 @@
+ABC Supply Co.
+Invoice Number: ABC-55188
+Invoice Date: 2026-08-12
+PO Number: PO-101-Gutters
+Aluminum 6in Seamless Gutter Coils ... $1,120.60
+Amount Due: $1,120.60

@@ -1,0 +1,13 @@
+THE HOME DEPOT PRO - STORE #0481
+Commercial Sales & Contractor Services
+Invoice #: HD-984210
+Invoice Date: 08/10/2026
+PO Number: PO-101-Framing
+Job Reference: 101 Main St Remodel
+--------------------------------------------------
+Item: 2x4x16 KD Premium Fir (Qty: 120) ... $960.00
+Item: 3/4in CDX Plywood Sheathing (Qty: 15) ... $490.75
+Subtotal: $1,450.75
+Sales Tax: $0.00 (Exempt Contractor)
+Total Amount Due: $1,450.75
+Payment Term: Net 30

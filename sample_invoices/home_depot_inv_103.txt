@@ -1,0 +1,8 @@
+THE HOME DEPOT
+Invoice #: HD-984501
+Date: 08/18/2026
+Purchase Order: PO-101-Drywall
+--------------------------------------------------
+1/2in Sheetrock Gypsum Panels 4x8 (Qty: 40) ... $680.00
+Joint Compound All-Purpose 5 Gal (Qty: 4) ... $195.20
+Total: $875.20

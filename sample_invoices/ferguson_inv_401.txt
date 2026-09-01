@@ -1,0 +1,9 @@
+FERGUSON ENTERPRISES - PLUMBING SUPPLY
+Invoice #: FERG-10940
+Invoice Date: 08/04/2026
+Customer PO: PO-204-RoughPlumbing
+Job Name: 204 Pine Ridge Commercial
+--------------------------------------------------
+PEX-A Tubing 3/4in 500ft ... $820.50
+Cast Iron No-Hub Drain Pipe & Fittings ... $2,820.00
+Invoice Total: $3,640.50

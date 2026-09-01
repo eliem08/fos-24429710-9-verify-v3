@@ -1,0 +1,9 @@
+84 LUMBER COMPANY - BUILDING MATERIALS
+Invoice #: 84L-77401
+Date: 08/02/2026
+Purchase Order #: PO-310-Trusses
+Job: 310 Elm Creek New Build
+--------------------------------------------------
+Engineered Roof Trusses 32ft Span (Qty: 24) ... $6,800.00
+LVL Beam 1-3/4 x 11-7/8 (Qty: 4) ... $1,650.00
+Total Amount Due: $8,450.00

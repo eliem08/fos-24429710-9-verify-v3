@@ -1,0 +1,6 @@
+FASTENAL
+Invoice #: FAST-6710
+Date: 08/20/2026
+Purchase Order: PO-204-Panels
+200A 3-Phase Main Distribution Panel ... $3,490.50
+Total: $3,490.50

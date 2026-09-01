@@ -1,0 +1,10 @@
+ABC SUPPLY CO INC - ROOFING & SIDING
+Invoice #: ABC-55102
+Date: 08/05/2026
+Customer PO: PO-101-Roofing
+Job Site: 101 Main St Remodel
+--------------------------------------------------
+Timberline HDZ Architectural Shingles (40 sq) ... $3,600.00
+Synthetic Underlayment Rolls (6 rolls) ... $650.00
+Subtotal: $4,250.00
+Invoice Total: $4,250.00

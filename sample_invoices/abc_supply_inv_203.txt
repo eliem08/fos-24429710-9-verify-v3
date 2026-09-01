@@ -1,0 +1,6 @@
+ABC Supply Co Inc
+Invoice #: ABC-55240
+Date: 08/19/2026
+PO: PO-101-Flashing
+Step Flashing & Drip Edge 10ft ... $680.00
+Total Amount: $680.00

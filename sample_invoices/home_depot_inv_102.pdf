@@ -1,0 +1,32 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>
+endobj
+4 0 obj
+<< /Length 500 >>
+stream
+BT /F1 11 Tf 1 0 0 1 50 750 Tm (The Home Depot Supply Co.) Tj 1 0 0 1 50 730 Tm (Invoice Number: HD-984332) Tj 1 0 0 1 50 710 Tm (Date of Issue: 2026-08-14) Tj 1 0 0 1 50 690 Tm (PO #: PO-101-Hardware) Tj 1 0 0 1 50 670 Tm (--------------------------------------------------) Tj 1 0 0 1 50 650 Tm (Fasteners & 3in Deck Screws 25lb ... $185.00) Tj 1 0 0 1 50 630 Tm (Construction Adhesive Heavy Duty ... $139.50) Tj 1 0 0 1 50 610 Tm (Subtotal: $324.50) Tj 1 0 0 1 50 590 Tm (Total Due: $324.50) Tj ET
+endstream
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000172 00000 n 
+0000000298 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+862
+%%EOF
