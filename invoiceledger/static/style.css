@@ -652,6 +652,33 @@ h1, h2, h3, h4, h5, h6 {
     font-variant-numeric: tabular-nums;
 }
 
+/* Cost-code breakdown table inside the (narrow) job-rollup cards: the plain
+   .data-table padding + wide mono currency overflowed the card and clipped
+   the Remaining column. Fixed layout + tight padding + sized columns so all
+   four columns fit within the card width. */
+.cost-breakdown {
+    table-layout: fixed;
+    width: 100%;
+}
+.cost-breakdown th,
+.cost-breakdown td {
+    padding: 6px 6px;
+    font-size: 10.5px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.cost-breakdown th:first-child,
+.cost-breakdown td:first-child {
+    width: 34%;
+    white-space: normal;      /* long codes like "15-Mechanical/Plumbing" wrap */
+    word-break: break-word;
+}
+.cost-breakdown th:not(:first-child),
+.cost-breakdown td:not(:first-child) {
+    width: 22%;
+    white-space: nowrap;      /* keep each currency figure on one line */
+}
+
 .text-center { text-align: center; }
 .text-success { color: var(--success); }
 .text-warning { color: var(--warning); }

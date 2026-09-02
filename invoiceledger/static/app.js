@@ -395,7 +395,7 @@ async function loadRollups() {
                 </div>
 
                 <h4 style="font-size:12px; text-transform:uppercase; color:var(--text-muted); margin-bottom:6px;">Cost Code Breakdown</h4>
-                <table class="data-table" style="font-size:11px;">
+                <table class="data-table cost-breakdown">
                     <thead>
                         <tr>
                             <th>Cost Code</th>
