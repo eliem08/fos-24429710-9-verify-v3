@@ -6,8 +6,11 @@ from .models import (
     InvoiceStatus,
     ExtractedInvoice,
     Job,
+    Vendor,
     VendorRule,
     ColumnMappingTemplate,
+    EmailSourceConfig,
+    PortalSourceConfig,
     JobRollup,
     ReconciliationSummary,
 )
@@ -16,16 +19,22 @@ from .extractor import Extractor
 from .rules_engine import RulesEngine
 from .duplicate_guard import DuplicateGuard
 from .archiver import Archiver
+from .email_fetcher import EmailFetcher
+from .portal_fetcher import PortalFetcher
 from .spreadsheet import SpreadsheetManager
 from .rollups import RollupEngine
 from .intake import IntakeManager
+from .scheduler import IntakeWorker
 
 __all__ = [
     "InvoiceStatus",
     "ExtractedInvoice",
     "Job",
+    "Vendor",
     "VendorRule",
     "ColumnMappingTemplate",
+    "EmailSourceConfig",
+    "PortalSourceConfig",
     "JobRollup",
     "ReconciliationSummary",
     "Storage",
@@ -33,7 +42,10 @@ __all__ = [
     "RulesEngine",
     "DuplicateGuard",
     "Archiver",
+    "EmailFetcher",
+    "PortalFetcher",
     "SpreadsheetManager",
     "RollupEngine",
     "IntakeManager",
+    "IntakeWorker",
 ]

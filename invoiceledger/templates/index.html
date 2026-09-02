@@ -3,43 +3,56 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>InvoiceLedger - Automated Contractor Invoice Reconciler</title>
+    <title>InvoiceLedger - Contractor Invoice Reconciler & Job P&L Sync</title>
     <link rel="stylesheet" href="/static/style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
     <div class="app-container">
         <!-- Sidebar -->
         <aside class="sidebar">
             <div class="brand">
-                <div class="brand-icon">📐</div>
-                <div>
-                    <h2>InvoiceLedger</h2>
+                <div class="brand-mark">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/>
+                        <path d="M8 7h8"/>
+                        <path d="M8 11h8"/>
+                        <path d="M8 15h5"/>
+                    </svg>
+                </div>
+                <div class="brand-text">
+                    <h2 class="brand-title">InvoiceLedger</h2>
                     <span class="subtext">Contractor P&L Sync</span>
                 </div>
             </div>
             
             <nav class="nav-menu">
                 <button class="nav-item active" data-tab="intake">
-                    <span class="icon">📥</span> Intake & Upload
+                    <svg class="nav-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    <span>Intake & Upload</span>
                 </button>
                 <button class="nav-item" data-tab="review">
-                    <span class="icon">🧐</span> Review Queue
+                    <svg class="nav-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                    <span>Review Queue</span>
                     <span class="badge badge-warning" id="badge-pending">0</span>
                 </button>
                 <button class="nav-item" data-tab="rollups">
-                    <span class="icon">📊</span> Job P&L Rollups
+                    <svg class="nav-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                    <span>Job P&L Rollups</span>
                 </button>
                 <button class="nav-item" data-tab="ledger">
-                    <span class="icon">📒</span> Committed Ledger
+                    <svg class="nav-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/><line x1="10" y1="6" x2="16" y2="6"/><line x1="10" y1="10" x2="16" y2="10"/><line x1="10" y1="14" x2="14" y2="14"/></svg>
+                    <span>Committed Ledger</span>
                 </button>
                 <button class="nav-item" data-tab="rules">
-                    <span class="icon">⚙️</span> Rules Engine
+                    <svg class="nav-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                    <span>Rules Engine</span>
                 </button>
                 <button class="nav-item" data-tab="mappings">
-                    <span class="icon">📋</span> Column Mapper
+                    <svg class="nav-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                    <span>Column Mapper</span>
                 </button>
             </nav>
 
@@ -47,7 +60,7 @@
                 <div class="status-indicator">
                     <span class="dot live"></span> System Ready
                 </div>
-                <button id="btn-sync-samples" class="btn btn-sm btn-outline">⚡ Load Sample Invoices</button>
+                <button id="btn-sync-samples" class="btn btn-sm btn-outline">Load Sample Invoices</button>
             </div>
         </aside>
 
@@ -91,23 +104,25 @@
                         
                         <div id="dropzone" class="dropzone">
                             <div class="dropzone-content">
-                                <div class="drop-icon">📄</div>
+                                <div class="drop-icon">
+                                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                                </div>
                                 <p><strong>Drag & drop invoice files here</strong></p>
-                                <span>or click to browse from computer (PDF, PNG, JPG)</span>
+                                <span class="drop-hint">or click to browse from computer (PDF, PNG, JPG)</span>
                                 <input type="file" id="file-input" multiple accept=".pdf,.png,.jpg,.jpeg,.txt" style="display:none;">
                             </div>
                         </div>
 
                         <div class="actions-row mt-4">
                             <button id="btn-browse" class="btn btn-primary">Choose Files</button>
-                            <button id="btn-email-sync" class="btn btn-secondary">📥 Sync Connected Email</button>
+                            <button id="btn-email-sync" class="btn btn-secondary">Sync Connected Email</button>
                         </div>
                     </div>
 
                     <div class="card">
                         <h3>Recent Intake Activity</h3>
                         <div id="intake-log" class="intake-log-container">
-                            <div class="empty-state">No files uploaded yet in this session. Drop invoices on the left to start!</div>
+                            <div class="empty-state">No files uploaded yet in this session. Drop invoices on the left to start.</div>
                         </div>
                     </div>
                 </div>
@@ -121,7 +136,7 @@
                 </div>
 
                 <div id="review-cards-container" class="review-grid">
-                    <div class="empty-state">No pending invoices in queue. All caught up! 🎉</div>
+                    <div class="empty-state">No pending invoices in queue. All caught up.</div>
                 </div>
             </section>
 
@@ -151,7 +166,7 @@
                         <select id="export-template-select" class="form-control" style="width: auto; display: inline-block;">
                             <!-- Templates options -->
                         </select>
-                        <button id="btn-export-csv" class="btn btn-success">⬇️ Export to Excel CSV</button>
+                        <button id="btn-export-csv" class="btn btn-success">Export to Excel CSV</button>
                     </div>
                 </div>
 
@@ -319,7 +334,7 @@
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary modal-close">Cancel</button>
                         <button type="button" id="btn-modal-reject" class="btn btn-danger">Reject</button>
-                        <button type="submit" class="btn btn-success">✅ Approve & Commit</button>
+                        <button type="submit" class="btn btn-success">Approve & Commit</button>
                     </div>
                 </form>
             </div>

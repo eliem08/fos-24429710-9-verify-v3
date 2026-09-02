@@ -50,7 +50,43 @@ class Job(BaseModel):
     budget_total: float = 0.0
     cost_code_budgets: Dict[str, float] = Field(default_factory=dict)
     status: str = "active"
+    spreadsheet_path: Optional[str] = None
     created_at: str = Field(default_factory=get_utc_now)
+
+
+class Vendor(BaseModel):
+    id: str
+    name: str
+    aliases: List[str] = Field(default_factory=list)
+    contact_email: Optional[str] = None
+    portal_url: Optional[str] = None
+    default_job_name: Optional[str] = None
+    default_cost_code: Optional[str] = None
+    created_at: str = Field(default_factory=get_utc_now)
+
+
+class EmailSourceConfig(BaseModel):
+    id: str = "default"
+    host: str = "imap.example.com"
+    port: int = 993
+    username: str = ""
+    password: str = ""
+    mailbox: str = "INBOX"
+    use_ssl: bool = True
+    protocol: str = "imap"  # imap or pop3
+    search_criteria: str = "UNSEEN"  # UNSEEN, ALL, etc.
+    mark_as_read: bool = True
+    is_active: bool = True
+
+
+class PortalSourceConfig(BaseModel):
+    id: str
+    name: str
+    url: str
+    auth_header: Optional[str] = None
+    api_key: Optional[str] = None
+    download_folder: Optional[str] = None
+    is_active: bool = True
 
 
 class VendorRule(BaseModel):
@@ -91,3 +127,4 @@ class ReconciliationSummary(BaseModel):
     reconciled_sum: float
     diff_cents: int
     is_reconciled: bool
+

@@ -1,21 +1,29 @@
 """OCR and Field Extraction Engine for Construction Vendor Invoices."""
 
+import os
 import re
 import uuid
+import json
+import base64
 import hashlib
+import logging
 from pathlib import Path
-from typing import Optional, Dict, Any, Tuple
+from typing import Optional, Dict, Any, Tuple, List
 from datetime import datetime, timezone
+import requests
+
+logger = logging.getLogger("invoiceledger.extractor")
 
 try:
     from pypdf import PdfReader
 except ImportError:
     PdfReader = None
 
+
 from .models import ExtractedInvoice, InvoiceStatus
 
 
-# Prominent construction vendor signatures & normalized names
+# Prominent construction vendor signatures & standard names
 VENDOR_CATALOG = {
     "home depot": "The Home Depot",
     "the home depot": "The Home Depot",
@@ -59,11 +67,31 @@ MONTH_MAP = {
 
 
 class Extractor:
-    """Multi-pass extraction engine for invoice PDFs, images, and text."""
+    """Multi-pass extraction engine for invoice PDFs, images, and text with OCR and Vision support."""
+
+    def __init__(self, custom_vendors: Optional[Dict[str, str]] = None):
+        self.custom_vendors: Dict[str, str] = custom_vendors or {}
+
+    def register_vendor(self, vendor_name: str, aliases: Optional[List[str]] = None):
+        """Registers a dynamic custom vendor pattern to standard name mapping."""
+        standard_name = vendor_name.strip()
+        self.custom_vendors[standard_name.lower()] = standard_name
+        if aliases:
+            for alias in aliases:
+                self.custom_vendors[alias.strip().lower()] = standard_name
+
+    def load_vendors_from_storage(self, storage: Any):
+        """Loads custom registered vendors from database storage."""
+        try:
+            vendors = storage.list_vendors()
+            for v in vendors:
+                self.register_vendor(v.name, v.aliases)
+        except Exception:
+            pass
 
     def extract_text_from_file(self, file_path: Path) -> str:
         suffix = file_path.suffix.lower()
-        if suffix in [".txt", ".log", ".json"]:
+        if suffix in [".txt", ".log", ".json", ".csv"]:
             try:
                 return file_path.read_text(encoding="utf-8", errors="replace")
             except Exception:
@@ -76,42 +104,46 @@ class Extractor:
                     text_parts = []
                     for page in reader.pages:
                         t = page.extract_text()
-                        if t:
-                            text_parts.append(t)
+                        if t and t.strip():
+                            text_parts.append(t.strip())
                     if text_parts:
-                        return "\n".join(text_parts)
+                        extracted = "\n".join(text_parts)
+                        usable = re.sub(r"[^A-Za-z0-9]", "", extracted)
+                        if len(usable) >= 20:
+                            return extracted
                 except Exception:
                     pass
 
-            # Fallback pure-python PDF string parser
+            # Fallback pure-python PDF string parser for literal text strings in streams
             try:
                 raw_bytes = file_path.read_bytes()
-                # Extract ASCII / UTF-8 strings from PDF stream
                 matches = re.findall(rb"\(([^)]{3,})\)", raw_bytes)
                 if matches:
                     extracted = "\n".join(m.decode("latin-1", errors="ignore") for m in matches if len(m) > 2)
-                    if len(extracted.strip()) > 30:
+                    usable = re.sub(r"[^A-Za-z0-9]", "", extracted)
+                    if len(usable) > 30:
                         return extracted
-                # Plain regex on stream text
-                clean = re.sub(rb"[^\x20-\x7E\n\r\t]", b" ", raw_bytes)
-                return clean.decode("ascii", errors="ignore")
             except Exception:
-                return ""
+                pass
 
-        # Default fallback
-        try:
-            return file_path.read_text(encoding="utf-8", errors="replace")
-        except Exception:
             return ""
+
+        return ""
 
     def normalize_vendor(self, text: str) -> Tuple[str, float]:
         text_lower = text.lower()
-        # 1. Check known catalog
+
+        # 1. Check custom user-registered vendors first
+        for key, standard_name in self.custom_vendors.items():
+            if key in text_lower:
+                return standard_name, 0.98
+
+        # 2. Check known built-in catalog
         for key, standard_name in VENDOR_CATALOG.items():
             if key in text_lower:
                 return standard_name, 0.95
 
-        # 2. Look for vendor header patterns (lines near top)
+        # 3. Look for vendor header patterns (lines near top)
         lines = [line.strip() for line in text.splitlines() if line.strip()]
         for line in lines[:8]:
             # Skip noise lines
@@ -123,7 +155,7 @@ class Extractor:
                 if len(clean) > 3:
                     return clean, 0.85
 
-        # 3. Default to first clean header line
+        # 4. Default to first clean header line
         if lines:
             first_line = lines[0].strip()
             if len(first_line) > 3 and len(first_line) < 50:
@@ -148,7 +180,6 @@ class Extractor:
             m = re.search(pat, text, re.I)
             if m:
                 inv_num = m.group(1).strip().strip(":#*-")
-                # ignore if it's a date or common word
                 if inv_num and not re.match(r"^\d{4}-\d{2}-\d{2}$", inv_num) and inv_num.lower() not in ["date", "total", "amount", "number", "due"]:
                     return inv_num, 0.90
 
@@ -161,7 +192,6 @@ class Extractor:
         return f"INV-{uuid.uuid4().hex[:8].upper()}", 0.30
 
     def normalize_date(self, text: str) -> Tuple[str, float]:
-        # Priority date labeled patterns
         date_patterns = [
             r"(?:Invoice\s*Date|Date\s*of\s*Issue|Date\s*Billed|Date|Billed)[:\s*-]*(\d{4}[-/]\d{1,2}[-/]\d{1,2})",
             r"(?:Invoice\s*Date|Date\s*of\s*Issue|Date\s*Billed|Date|Billed)[:\s*-]*(\d{1,2}[-/]\d{1,2}[-/]\d{2,4})",
@@ -178,18 +208,15 @@ class Extractor:
                 if parsed:
                     return parsed, 0.90
 
-        # Fallback to today
         return datetime.now(timezone.utc).strftime("%Y-%m-%d"), 0.40
 
     def _parse_date_string(self, raw_str: str) -> Optional[str]:
         raw_str = raw_str.replace(",", "").strip()
-        # ISO: YYYY-MM-DD
         m = re.match(r"^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$", raw_str)
         if m:
             y, mo, d = m.groups()
             return f"{int(y):04d}-{int(mo):02d}-{int(d):02d}"
 
-        # US: MM/DD/YYYY or MM-DD-YYYY
         m = re.match(r"^(\d{1,2})[-/](\d{1,2})[-/](\d{2,4})$", raw_str)
         if m:
             mo, d, y = m.groups()
@@ -198,7 +225,6 @@ class Extractor:
                 year += 2000
             return f"{year:04d}-{int(mo):02d}-{int(d):02d}"
 
-        # Month DD YYYY e.g. August 15 2026 or Aug 15 2026
         m = re.match(r"^([A-Za-z]+)\s+(\d{1,2})\s+(\d{4})$", raw_str)
         if m:
             mon_str, d, y = m.groups()
@@ -209,7 +235,6 @@ class Extractor:
         return None
 
     def normalize_total(self, text: str) -> Tuple[float, float, Optional[float], Optional[float]]:
-        # Look for Total, Amount Due, Balance Due, Grand Total
         patterns = [
             r"(?:Total\s*Amount|Grand\s*Total|Invoice\s*Total|Total\s*Due|Amount\s*Due|Balance\s*Due|Total\s*USD|Total)[:\s*$]*([0-9,]+\.[0-9]{2})\b",
             r"(?:Total|Due)[:\s*$]*([0-9,]+\.[0-9]{2})\b",
@@ -220,7 +245,6 @@ class Extractor:
         for pat in patterns:
             matches = re.findall(pat, text, re.I)
             if matches:
-                # Take the highest or explicit matched total
                 for match in matches:
                     val_str = match.replace(",", "").strip()
                     try:
@@ -233,7 +257,6 @@ class Extractor:
                 if total_val > 0.0:
                     break
 
-        # Subtotal
         subtotal = None
         m_sub = re.search(r"(?:Subtotal|Sub\s*Total)[:\s*$]*([0-9,]+\.[0-9]{2})", text, re.I)
         if m_sub:
@@ -242,7 +265,6 @@ class Extractor:
             except ValueError:
                 pass
 
-        # Tax
         tax = 0.0
         m_tax = re.search(r"(?:Sales\s*Tax|Tax)[:\s*$]*([0-9,]+\.[0-9]{2})", text, re.I)
         if m_tax:
@@ -266,10 +288,172 @@ class Extractor:
                     return po
         return None
 
+    def _parse_vision_response(self, content_str: str) -> Dict[str, Any]:
+        clean = content_str.strip()
+        fence = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", clean, re.DOTALL)
+        if fence:
+            clean = fence.group(1)
+        else:
+            json_block = re.search(r"(\{.*\})", clean, re.DOTALL)
+            if json_block:
+                clean = json_block.group(1)
+        return json.loads(clean)
+
+    def extract_via_vision(self, file_path: Path) -> ExtractedInvoice:
+        api_base = os.environ.get("OPENAI_API_BASE", "").strip()
+        api_key = os.environ.get("OPENAI_API_KEY", "").strip()
+
+        if not api_base or not api_key:
+            raise ValueError(
+                f"Vision extraction failed: {file_path.name} requires vision extraction, "
+                f"but OPENAI_API_BASE and OPENAI_API_KEY environment variables are not configured."
+            )
+
+        endpoint = api_base.rstrip("/")
+        if not endpoint.endswith("/chat/completions"):
+            endpoint = f"{endpoint}/chat/completions"
+
+        content_bytes = file_path.read_bytes()
+        file_hash = hashlib.sha256(content_bytes).hexdigest()
+        suffix = file_path.suffix.lower()
+
+        # Build data URL
+        image_data_url = None
+        if suffix == ".pdf":
+            if PdfReader is not None:
+                try:
+                    reader = PdfReader(str(file_path))
+                    for page in reader.pages:
+                        if hasattr(page, "images") and len(page.images) > 0:
+                            img = page.images[0]
+                            ext = Path(img.name).suffix.lstrip(".").lower()
+                            mime = f"image/{ext}" if ext in ["png", "jpeg", "jpg", "webp"] else "image/png"
+                            b64_str = base64.b64encode(img.data).decode("utf-8")
+                            image_data_url = f"data:{mime};base64,{b64_str}"
+                            break
+                except Exception:
+                    pass
+            if not image_data_url:
+                b64_str = base64.b64encode(content_bytes).decode("utf-8")
+                image_data_url = f"data:image/png;base64,{b64_str}"
+        else:
+            mime = "image/png" if suffix == ".png" else "image/jpeg" if suffix in [".jpg", ".jpeg"] else f"image/{suffix.lstrip('.')}"
+            b64_str = base64.b64encode(content_bytes).decode("utf-8")
+            image_data_url = f"data:{mime};base64,{b64_str}"
+
+        prompt = (
+            "You are an expert invoice OCR system for construction contractors. "
+            "Extract the invoice fields from this image and return a strict JSON object with these keys: "
+            "vendor (string), invoice_number (string), invoice_date (YYYY-MM-DD string), "
+            "po_number (string or null), total_amount (float), tax_amount (float or null), "
+            "subtotal_amount (float or null). Return ONLY valid JSON, with no other text."
+        )
+
+        payload = {
+            "model": "moonshotai/Kimi-K3",
+            "messages": [
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": prompt},
+                        {"type": "image_url", "image_url": {"url": image_data_url}},
+                    ],
+                }
+            ],
+            "temperature": 0.0,
+        }
+
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        }
+
+        resp = requests.post(endpoint, json=payload, headers=headers, timeout=60)
+        resp.raise_for_status()
+        resp_json = resp.json()
+        raw_output = resp_json["choices"][0]["message"]["content"]
+        parsed = self._parse_vision_response(raw_output)
+
+        raw_vendor = str(parsed.get("vendor") or parsed.get("vendor_name") or "Unknown Vendor").strip()
+        vendor, _ = self.normalize_vendor(raw_vendor)
+        if vendor == "Unknown Vendor" and raw_vendor and raw_vendor != "Unknown Vendor":
+            vendor = raw_vendor
+
+        inv_num = str(parsed.get("invoice_number") or parsed.get("invoice_no") or parsed.get("inv_number") or "").strip()
+        if not inv_num:
+            inv_num = f"INV-{uuid.uuid4().hex[:8].upper()}"
+
+        raw_date = str(parsed.get("invoice_date") or parsed.get("date") or "").strip()
+        parsed_date = self._parse_date_string(raw_date)
+        inv_date = parsed_date or (raw_date if re.match(r"^\d{4}-\d{2}-\d{2}$", raw_date) else datetime.now(timezone.utc).strftime("%Y-%m-%d"))
+
+        tot_raw = parsed.get("total_amount") or parsed.get("total") or parsed.get("amount") or 0.0
+        try:
+            total = round(float(re.sub(r"[^\d.]", "", str(tot_raw)) or 0.0), 2)
+        except Exception:
+            total = 0.0
+
+        tax_raw = parsed.get("tax_amount") or parsed.get("tax")
+        try:
+            tax = round(float(re.sub(r"[^\d.]", "", str(tax_raw))), 2) if tax_raw is not None else 0.0
+        except Exception:
+            tax = 0.0
+
+        sub_raw = parsed.get("subtotal_amount") or parsed.get("subtotal")
+        try:
+            subtotal = round(float(re.sub(r"[^\d.]", "", str(sub_raw))), 2) if sub_raw is not None else None
+        except Exception:
+            subtotal = None
+
+        po_num = parsed.get("po_number") or parsed.get("po")
+        if po_num:
+            po_num = str(po_num).strip()
+            if po_num.lower() in ["none", "null", "n/a", ""]:
+                po_num = None
+
+        inv_id = f"inv-{uuid.uuid4().hex[:10]}"
+
+        return ExtractedInvoice(
+            id=inv_id,
+            source_filename=file_path.name,
+            vendor_name=vendor,
+            invoice_number=inv_num,
+            invoice_date=inv_date,
+            total_amount=total,
+            tax_amount=tax,
+            subtotal_amount=subtotal,
+            po_number=po_num,
+            status=InvoiceStatus.PENDING_REVIEW,
+            confidence_score=0.95,
+            file_hash=file_hash,
+            raw_text=raw_output[:5000],
+        )
+
     def process_file(self, file_path: Path) -> ExtractedInvoice:
+        suffix = file_path.suffix.lower()
+        is_image = suffix in [".png", ".jpg", ".jpeg", ".webp", ".bmp", ".tiff", ".gif"]
+
+        # Scanned and image invoices route directly through the Kimi-K3 vision extraction path
+        if is_image:
+            return self.extract_via_vision(file_path)
+
         content_bytes = file_path.read_bytes()
         file_hash = hashlib.sha256(content_bytes).hexdigest()
         raw_text = self.extract_text_from_file(file_path)
+
+        # Check if text layer yielded usable text
+        usable_chars = re.sub(r"[^A-Za-z0-9]", "", raw_text)
+        if suffix == ".pdf" and len(usable_chars) < 20:
+            # Scanned / image-only PDF with no text layer: fall back to vision path
+            return self.extract_via_vision(file_path)
+
+        if not raw_text.strip():
+            if not os.environ.get("OPENAI_API_BASE") or not os.environ.get("OPENAI_API_KEY"):
+                raise ValueError(
+                    f"No usable text layer found in {file_path.name}, and "
+                    f"OPENAI_API_BASE/OPENAI_API_KEY are not configured for vision extraction."
+                )
+            return self.extract_via_vision(file_path)
 
         vendor, v_conf = self.normalize_vendor(raw_text)
         inv_num, num_conf = self.normalize_invoice_number(raw_text)

@@ -36,3 +36,38 @@ def test_cli_scan():
     res = run_cli("scan", str(sample_file))
     assert res.returncode == 0
     assert "FAST-6601" in res.stdout
+
+
+def test_cli_fetch_emails_rejects_password_flag():
+    """Verifies that passing --password to fetch-emails is rejected (flag removed for security)."""
+    res = run_cli("fetch-emails", "--host", "imap.test.com", "--username", "user", "--password", "secretpass")
+    assert res.returncode != 0
+    assert "unrecognized arguments" in res.stderr.lower() or "--password" in res.stderr
+
+
+def test_cli_fetch_emails_reads_env_password(monkeypatch):
+    """Verifies that fetch-emails reads IMAP_PASSWORD from environment instead of CLI flag."""
+    import os
+    from unittest.mock import patch, MagicMock
+    from invoiceledger.cli import cmd_fetch_emails
+    import argparse
+
+    mock_intake = MagicMock()
+    mock_intake.fetch_and_process_emails.return_value = []
+
+    args = argparse.Namespace(
+        host="imap.example.com",
+        port=993,
+        username="contractor@example.com",
+        mailbox="INBOX",
+        no_ssl=False,
+        auto_commit=True,
+    )
+
+    with patch.dict(os.environ, {"IMAP_PASSWORD": "env_secret_password"}):
+        cmd_fetch_emails(args, mock_intake)
+        assert mock_intake.fetch_and_process_emails.called
+        call_kwargs = mock_intake.fetch_and_process_emails.call_args[1]
+        cfg = call_kwargs.get("config")
+        assert cfg is not None
+        assert cfg.password == "env_secret_password"
